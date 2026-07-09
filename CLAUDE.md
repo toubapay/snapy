@@ -18,22 +18,27 @@ you're touching:
 | | Legacy demo (repo root) | Current stack |
 |---|---|---|
 | Backend | `server.js` (single file) | `backend/` (Express, modular routes) |
-| Frontend | `public/` (static HTML/JS/CSS) | `web/` (React + Vite) + `mobile-rn/` (Expo/React Native) |
+| Frontend | `public/` (static HTML/JS/CSS) | `web/` (React + Vite) + `mobile-rn/` (Expo/React Native) + `mobile-flutter/` (Flutter, scaffold only) |
 | Storage | flat JSON files in `data/` | SQLite (`backend/data/snapy.db`) |
 | Auth sessions | in-memory `Map`, wiped on restart | JWT, survives restarts |
-| Port | 3000 (serves both API + frontend) | API on 4000, web app on 5173, mobile via Expo dev tools |
+| Port | 3000 (serves both API + frontend) | API on 4000, web app on 5173, mobile via Expo dev tools / `flutter run` |
 
 The legacy demo still runs (`npm start` from the repo root) and is left
 intact as a reference/fallback — it is not wired to the new stack in any way
 (separate `uploads/`, separate data). New feature work should go into
-`backend/` + `web/` (or `mobile-rn/` for mobile-specific work) unless the
-user asks specifically about the legacy demo.
+`backend/` + `web/` (or `mobile-rn/`/`mobile-flutter/` for mobile-specific
+work) unless the user asks specifically about the legacy demo.
 
-`web/` and `mobile-rn/` are two independent frontends against the same
-`backend/` API — not one wrapping the other. Both ship their own `api.js`
-fetch wrapper and their own `localStorage`/`AsyncStorage`-backed auth
-persistence; a feature added to one does not exist on the other until
-ported over by hand.
+`web/`, `mobile-rn/`, and `mobile-flutter/` are independent frontends
+against the same `backend/` API — none wraps another. Each ships (or will
+ship) its own API client and its own persistence for auth state; a feature
+added to one does not exist on the others until ported over by hand.
+`mobile-flutter/` is a bare `flutter create` scaffold as of 2026-07-09 — no
+screens or API integration yet, just default counter-app boilerplate plus
+dependencies (`http`, `shared_preferences`, `image_picker`, `provider`,
+`url_launcher`) picked in anticipation of the same features `web/` and
+`mobile-rn/` already have. Don't assume it has parity with the other two
+frontends until it's actually built out.
 
 ## Commands
 
@@ -42,12 +47,13 @@ ported over by hand.
 npm install && npm start     # http://localhost:3000
 ```
 
-**Current stack** — run in separate terminals (mobile only if you're
-touching `mobile-rn/`):
+**Current stack** — run in separate terminals (mobile targets only if
+you're touching them):
 ```bash
 cd backend && npm install && npm run dev    # API on http://localhost:4000
 cd web && npm install && npm run dev        # React app on http://localhost:5173
 cd mobile-rn && npm install && npm start    # Expo dev tools (scan QR / press a / press i / press w)
+cd mobile-flutter && flutter pub get && flutter run   # scaffold only, no backend wiring yet
 ```
 
 `backend/` and `web/` need `.env` (copy from `.env.example` in each folder).
@@ -57,9 +63,10 @@ missing/erroring) and `JWT_SECRET` (any random string — generate with
 `web/.env` just needs `VITE_API_BASE_URL` pointing at the backend.
 `mobile-rn/.env` (optional) needs `EXPO_PUBLIC_API_BASE_URL` if the default
 host resolution doesn't reach your backend — see "Architecture — mobile"
-below.
+below. `mobile-flutter/` has no `.env` yet (nothing to configure until it
+actually calls the API).
 
-No test suite or linter is configured in any of the three JS projects.
+No test suite or linter is configured in any of the four JS/Dart projects.
 
 ## Architecture — legacy demo (`server.js` / `public/`)
 
@@ -195,6 +202,30 @@ React tree with its own screens, navigation, and API client.
   `https://docs.expo.dev/versions/v57.0.0/` for the pinned version before
   relying on remembered Expo APIs.
 
+## Architecture — mobile, second attempt (`mobile-flutter/`)
+
+A **bare `flutter create` scaffold**, not a built app — `lib/main.dart` is
+still the default counter-app template, and there is no API client, no
+screens, and no auth persistence wired up yet. Treat any work here as
+greenfield, not "extend an existing feature."
+
+- Package name is `snapy_mobile` (`pubspec.yaml`); targets Android, iOS,
+  macOS, Linux, Windows, and web build folders were all generated (`flutter
+  create` default), even though this app will likely only ship for
+  Android/iOS in practice — don't assume every platform folder needs
+  maintaining.
+- `pubspec.yaml` already lists deps chosen ahead of any code that uses them:
+  `http` (API calls), `shared_preferences` (likely auth token persistence,
+  the Flutter analogue of `web/`'s `localStorage` and `mobile-rn/`'s
+  AsyncStorage), `image_picker` (photo capture), `provider` (state
+  management — no Redux/Riverpod), and `url_launcher` (presumably for the
+  WhatsApp `wa.me` deep link, mirroring the other two frontends). No code
+  currently uses any of them.
+- No relationship to `mobile-rn/` beyond both targeting the same `backend/`
+  API eventually — this is a second, independent mobile implementation, not
+  a migration in progress. Confirm with the user which mobile app is meant
+  before assuming intent when asked to "fix the mobile app."
+
 ## Working in this repo
 
 - The legacy demo (`server.js`, `public/`) stays single-file-per-concern with
@@ -204,8 +235,10 @@ React tree with its own screens, navigation, and API client.
   and the component-per-concern split in `web/src/components/` rather than
   collapsing back into fewer files.
 - A backend API change (new field, new route, new validation rule) has two
-  frontend consumers to update, not one: `web/src/api.js` **and**
-  `mobile-rn/src/api.js`. Check both before calling an API change complete.
+  frontend consumers to update today: `web/src/api.js` **and**
+  `mobile-rn/src/api.js` (`mobile-flutter/` has no API client yet, so
+  nothing to update there until it's built out). Check both existing
+  clients before calling an API change complete.
 - Reset the legacy demo by deleting `data/sellers.json`, `data/products.json`,
   and/or `data/chats.json` (recreated empty on next start). Reset the current
   stack by deleting `backend/data/snapy.db*`.

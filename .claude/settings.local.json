@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat data/sellers.json data/products.json data/chats.json)",
+      "Bash(ls .env)",
+      "Read(//tmp/**)",
+      "Bash(curl -s -w \" [%{http_code}]\" http://localhost:4000/api/products)",
+      "Bash(git add *)",
+      "Bash(git reset *)"
+    ]
+  }
+}

@@ -1,0 +1,5 @@
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Snapy">
+  <rect x="2" y="2" width="28" height="28" rx="9" fill="#1a1926" stroke="#e8a33d" stroke-width="2"/>
+  <polygon points="16.9,6.83 7.75,17.83 16,17.83 15.08,25.17 24.25,14.17 16,14.17" fill="#e8a33d"/>
+  <circle cx="24" cy="24" r="4" fill="#5fc3b0" stroke="#100f16" stroke-width="1.5"/>
+</svg>

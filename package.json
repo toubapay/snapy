@@ -1,0 +1,19 @@
+{
+  "name": "snapy-mini-marketplace",
+  "version": "1.0.0",
+  "description": "Minimal multivendor marketplace demo with Claude AI-generated product descriptions from product photos.",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "multer": "^1.4.5-lts.1",
+    "nanoid": "^5.0.7"
+  }
+}

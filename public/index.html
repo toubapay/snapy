@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Snapy — vendez en une photo</title>
+<link rel="icon" type="image/svg+xml" href="/logo.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="grain"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <img class="logo-mark" src="/logo.svg" alt="" width="28" height="28" />
+      <span class="mark">Snapy</span>
+    </div>
+    <span class="tagline">une photo. une annonce. vendu.</span>
+    <div class="account-bar" id="accountBar">
+      <button type="button" class="account-btn manage-btn" id="manageAccountBtn" hidden>Mon compte</button>
+      <button type="button" class="account-btn" id="accountBtn">Se connecter pour vendre</button>
+    </div>
+  </header>
+
+  <nav class="mainnav" id="mainNav">
+    <button type="button" class="nav-link active" id="navAnnonces" data-view="all">Annonces</button>
+    <button type="button" class="nav-link" id="navTop" data-view="top">Top annonces</button>
+    <button type="button" class="nav-link" id="navCategories" data-view="categories">Catégories</button>
+    <button type="button" class="nav-link" id="navMyAds" data-view="mine">Mes annonces</button>
+  </nav>
+
+  <main>
+    <section class="composer" aria-label="Publier un produit">
+      <h1>Prenez-le en photo. <span class="accent">Snapez-le, il vend pour vous.</span></h1>
+
+      <div class="composer-locked" id="composerLocked">
+        <p>Connectez-vous avec votre compte vendeur pour publier des produits — les acheteurs pourront vous contacter par chat et WhatsApp.</p>
+        <button type="button" class="camera-btn" id="composerLockedBtn">S'inscrire / Se connecter pour vendre</button>
+      </div>
+
+      <form id="postForm" hidden>
+        <div class="photo-input">
+          <label class="dropzone" id="dropzone" for="photoInput">
+            <input type="file" id="photoInput" name="image" accept="image/*" required hidden />
+            <div class="dropzone-inner" id="dropzoneInner">
+              <span class="dz-icon">＋</span>
+              <span class="dz-text">Déposez une photo ou cliquez pour parcourir</span>
+            </div>
+            <img id="preview" class="preview" alt="" hidden />
+            <button type="button" id="retakeBtn" class="retake-btn" hidden aria-label="Retirer la photo">✕</button>
+          </label>
+
+          <button type="button" id="cameraBtn" class="camera-btn">
+            <span class="cam-dot"></span>
+            Prendre une photo
+          </button>
+          <input type="file" id="captureInput" accept="image/*" capture="environment" hidden />
+        </div>
+
+        <div class="field-col">
+          <input
+            type="text"
+            id="nameInput"
+            name="name"
+            placeholder="Nom du produit — ex. Veste en jean vintage"
+            maxlength="80"
+            required
+          />
+
+          <select id="categoryInput" name="category" required>
+            <option value="" disabled selected>Choisissez une catégorie</option>
+          </select>
+
+          <p class="selling-as" id="sellingAs"></p>
+
+          <button type="submit" id="postBtn">
+            <span id="postBtnLabel">Publier le produit</span>
+          </button>
+        </div>
+
+        <p class="status" id="statusLine" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="feed">
+      <div class="feed-head">
+        <button type="button" class="feed-back" id="feedBack" hidden>← Retour aux annonces</button>
+        <h2 id="feedTitle">Nouvelles annonces</h2>
+        <span class="count" id="countBadge">0</span>
+      </div>
+      <div class="category-grid" id="categoryGrid" hidden></div>
+      <div class="grid" id="grid"></div>
+      <div class="empty" id="emptyState" hidden>
+        <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+          <path d="M4 7h16l-1.2 12.5a1.5 1.5 0 0 1-1.5 1.5H6.7a1.5 1.5 0 0 1-1.5-1.5L4 7Z"/>
+          <path d="M9 7V5.5A3 3 0 0 1 12 2.5a3 3 0 0 1 3 3V7"/>
+        </svg>
+        <p id="emptyText">Aucun produit pour l'instant — soyez le premier à en publier un.</p>
+      </div>
+    </section>
+
+    <div class="camera-modal" id="cameraModal" hidden>
+      <div class="camera-frame">
+        <video id="cameraVideo" autoplay playsinline muted></video>
+        <canvas id="cameraCanvas" hidden></canvas>
+        <p class="camera-error" id="cameraError" hidden></p>
+        <div class="camera-controls">
+          <button type="button" id="cameraClose" class="cam-icon-btn" aria-label="Fermer la caméra">✕</button>
+          <button type="button" id="cameraShutter" class="shutter" aria-label="Prendre la photo"></button>
+          <button type="button" id="cameraSwitch" class="cam-icon-btn" aria-label="Changer de caméra">⟲</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-modal" id="chatModal" hidden>
+      <div class="chat-panel">
+        <div class="chat-head">
+          <div class="chat-head-info">
+            <span class="chat-vendor" id="chatVendor">Vendeur</span>
+            <span class="chat-product" id="chatProductName">Produit</span>
+          </div>
+          <button type="button" id="chatClose" class="cam-icon-btn" aria-label="Fermer le chat">✕</button>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <form id="chatForm" class="chat-form">
+          <input type="text" id="chatInput" maxlength="500" placeholder="Écrire un message…" autocomplete="off" />
+          <button type="submit" id="chatSend" aria-label="Envoyer">➤</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="auth-modal" id="authModal" hidden>
+      <div class="auth-panel">
+        <button type="button" class="cam-icon-btn auth-close" id="authClose" aria-label="Fermer">✕</button>
+        <div class="auth-tabs">
+          <button type="button" class="auth-tab active" id="tabLogin" data-mode="login">Connexion</button>
+          <button type="button" class="auth-tab" id="tabRegister" data-mode="register">Inscription</button>
+        </div>
+        <p class="auth-sub" id="authSub">Connectez-vous avec votre numéro de téléphone vendeur et votre code PIN.</p>
+        <form id="authForm">
+          <input type="tel" id="authPhone" placeholder="Numéro de téléphone — ex. +221771234567" required autocomplete="tel" />
+          <input type="password" id="authPin" placeholder="Code PIN (4 à 6 chiffres)" inputmode="numeric" pattern="[0-9]*" maxlength="6" required autocomplete="off" />
+          <input type="text" id="authStoreName" placeholder="Nom de la boutique (facultatif)" maxlength="40" hidden />
+          <button type="submit" id="authSubmit">Se connecter</button>
+        </form>
+        <p class="auth-error" id="authError"></p>
+      </div>
+    </div>
+
+    <div class="account-modal" id="accountModal" hidden>
+      <div class="account-panel">
+        <button type="button" class="cam-icon-btn auth-close" id="accountClose" aria-label="Fermer">✕</button>
+        <h3>Mon compte</h3>
+        <p class="account-phone" id="accountPhone"></p>
+
+        <form id="profileForm" class="account-form">
+          <label class="account-label">Nom de la boutique</label>
+          <input type="text" id="storeNameInput" maxlength="40" placeholder="ex. Boutique Fatou" />
+          <button type="submit" id="profileSubmit">Enregistrer le profil</button>
+        </form>
+        <p class="account-msg" id="profileMsg"></p>
+
+        <form id="pinForm" class="account-form">
+          <label class="account-label">Changer le code PIN</label>
+          <input type="password" id="currentPinInput" placeholder="Code PIN actuel" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" />
+          <input type="password" id="newPinInput" placeholder="Nouveau code PIN (4 à 6 chiffres)" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" />
+          <button type="submit" id="pinSubmit">Changer le code PIN</button>
+        </form>
+        <p class="account-msg" id="pinMsg"></p>
+
+        <div class="account-danger">
+          <button type="button" id="logoutFromAccountBtn" class="account-secondary-btn">Se déconnecter</button>
+          <button type="button" id="deleteAccountBtn" class="account-danger-btn">Supprimer mon compte</button>
+        </div>
+        <p class="account-msg" id="deleteMsg"></p>
+      </div>
+    </div>
+
+    <div class="edit-modal" id="editModal" hidden>
+      <div class="edit-panel">
+        <button type="button" class="cam-icon-btn auth-close" id="editClose" aria-label="Fermer">✕</button>
+        <h3>Modifier l'annonce</h3>
+        <form id="editForm">
+          <label class="dropzone edit-dropzone" id="editDropzone" for="editPhotoInput">
+            <input type="file" id="editPhotoInput" accept="image/*" hidden />
+            <img id="editPreview" class="preview" alt="" />
+            <span class="edit-photo-hint">Cliquez pour remplacer la photo</span>
+          </label>
+          <input type="text" id="editNameInput" maxlength="80" placeholder="Nom du produit" required />
+          <select id="editCategoryInput" required>
+            <option value="" disabled>Choisissez une catégorie</option>
+          </select>
+          <button type="submit" id="editSubmit">Enregistrer les modifications</button>
+        </form>
+        <p class="edit-msg" id="editMsg"></p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span>Snapy mini · conçu avec l'API Claude (vision)</span>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

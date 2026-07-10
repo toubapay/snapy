@@ -54,7 +54,7 @@ class ProductCard extends StatelessWidget {
             children: [
               AspectRatio(
                 aspectRatio: 1,
-                child: Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xFF0C0C12))),
+                child: Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (_, error, stack) => const ColoredBox(color: Color(0xFF0C0C12))),
               ),
               Positioned(
                 top: 8,

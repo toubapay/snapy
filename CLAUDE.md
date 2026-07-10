@@ -18,7 +18,7 @@ you're touching:
 | | Legacy demo (repo root) | Current stack |
 |---|---|---|
 | Backend | `server.js` (single file) | `backend/` (Express, modular routes) |
-| Frontend | `public/` (static HTML/JS/CSS) | `web/` (React + Vite) + `mobile-rn/` (Expo/React Native) + `mobile-flutter/` (Flutter, scaffold only) |
+| Frontend | `public/` (static HTML/JS/CSS) | `web/` (React + Vite) + `mobile-rn/` (Expo/React Native) + `mobile-flutter/` (Flutter) |
 | Storage | flat JSON files in `data/` | SQLite (`backend/data/snapy.db`) |
 | Auth sessions | in-memory `Map`, wiped on restart | JWT, survives restarts |
 | Port | 3000 (serves both API + frontend) | API on 4000, web app on 5173, mobile via Expo dev tools / `flutter run` |
@@ -30,15 +30,9 @@ intact as a reference/fallback — it is not wired to the new stack in any way
 work) unless the user asks specifically about the legacy demo.
 
 `web/`, `mobile-rn/`, and `mobile-flutter/` are independent frontends
-against the same `backend/` API — none wraps another. Each ships (or will
-ship) its own API client and its own persistence for auth state; a feature
-added to one does not exist on the others until ported over by hand.
-`mobile-flutter/` is a bare `flutter create` scaffold as of 2026-07-09 — no
-screens or API integration yet, just default counter-app boilerplate plus
-dependencies (`http`, `shared_preferences`, `image_picker`, `provider`,
-`url_launcher`) picked in anticipation of the same features `web/` and
-`mobile-rn/` already have. Don't assume it has parity with the other two
-frontends until it's actually built out.
+against the same `backend/` API — none wraps another. Each ships its own
+API client and its own persistence for auth state; a feature added to one
+does not exist on the others until ported over by hand.
 
 ## Commands
 
@@ -53,7 +47,7 @@ you're touching them):
 cd backend && npm install && npm run dev    # API on http://localhost:4000
 cd web && npm install && npm run dev        # React app on http://localhost:5173
 cd mobile-rn && npm install && npm start    # Expo dev tools (scan QR / press a / press i / press w)
-cd mobile-flutter && flutter pub get && flutter run   # scaffold only, no backend wiring yet
+cd mobile-flutter && flutter pub get && flutter run   # pick a device: Chrome / Windows / an Android emulator
 ```
 
 `backend/` and `web/` need `.env` (copy from `.env.example` in each folder).
@@ -63,10 +57,14 @@ missing/erroring) and `JWT_SECRET` (any random string — generate with
 `web/.env` just needs `VITE_API_BASE_URL` pointing at the backend.
 `mobile-rn/.env` (optional) needs `EXPO_PUBLIC_API_BASE_URL` if the default
 host resolution doesn't reach your backend — see "Architecture — mobile"
-below. `mobile-flutter/` has no `.env` yet (nothing to configure until it
-actually calls the API).
+below. `mobile-flutter/` needs no `.env`; override its API base URL at run
+time instead with `--dart-define=API_BASE_URL=http://...` (see below).
 
-No test suite or linter is configured in any of the four JS/Dart projects.
+No test suite is configured for the legacy demo, `backend/`, `web/`, or
+`mobile-rn/`. `mobile-flutter/` has the default `flutter_lints` analyzer
+config (`flutter analyze`) and one trivial smoke test — that's Flutter
+project-template default, not a deliberate testing investment; don't take
+it as precedent to add tests to the other three.
 
 ## Architecture — legacy demo (`server.js` / `public/`)
 
@@ -204,27 +202,46 @@ React tree with its own screens, navigation, and API client.
 
 ## Architecture — mobile, second attempt (`mobile-flutter/`)
 
-A **bare `flutter create` scaffold**, not a built app — `lib/main.dart` is
-still the default counter-app template, and there is no API client, no
-screens, and no auth persistence wired up yet. Treat any work here as
-greenfield, not "extend an existing feature."
+Past the scaffold stage: `lib/main.dart` now boots a real `Provider`-backed
+app with the same screen set as `mobile-rn/` (Annonces, Top, Catégories, Mes
+annonces, Auth, Account, Compose, EditProduct, Chat, Boutique,
+CategoryFeed). Still a second, independent mobile implementation — not a
+migration of `mobile-rn/` and not sharing any code with it. Confirm with the
+user which mobile app is meant before assuming intent when asked to "fix
+the mobile app."
 
-- Package name is `snapy_mobile` (`pubspec.yaml`); targets Android, iOS,
-  macOS, Linux, Windows, and web build folders were all generated (`flutter
-  create` default), even though this app will likely only ship for
-  Android/iOS in practice — don't assume every platform folder needs
-  maintaining.
-- `pubspec.yaml` already lists deps chosen ahead of any code that uses them:
-  `http` (API calls), `shared_preferences` (likely auth token persistence,
-  the Flutter analogue of `web/`'s `localStorage` and `mobile-rn/`'s
-  AsyncStorage), `image_picker` (photo capture), `provider` (state
-  management — no Redux/Riverpod), and `url_launcher` (presumably for the
-  WhatsApp `wa.me` deep link, mirroring the other two frontends). No code
-  currently uses any of them.
-- No relationship to `mobile-rn/` beyond both targeting the same `backend/`
-  API eventually — this is a second, independent mobile implementation, not
-  a migration in progress. Confirm with the user which mobile app is meant
-  before assuming intent when asked to "fix the mobile app."
+- **Navigation is manual**, not a router package: `HomeShell` in
+  `lib/main.dart` holds the four bottom-tab screens in an `IndexedStack`
+  and swaps `_index` on tap; Compose/Account/Auth are pushed on top via
+  `Navigator.push(MaterialPageRoute(...))` from the `AppBar` actions. No
+  `go_router`, no named routes — unlike `mobile-rn/`'s `@react-navigation`
+  stack+tabs setup.
+- **`lib/services/api.dart`** (`Api.instance`, a singleton) mirrors
+  `web/src/api.js`/`mobile-rn/src/api.js`'s method shape (`register`,
+  `login`, `products`, `chat`, etc.) but is Dart, wraps the `http` package,
+  and uses `http.MultipartRequest` for the image-upload endpoints
+  (`createProduct`/`updateProduct`) — a separate implementation, changes to
+  the other two `api.js` files don't propagate here.
+- **API base URL resolution** mirrors `mobile-rn/`'s Android/iOS split
+  (`10.0.2.2:4000` on Android, `localhost:4000` elsewhere) but the override
+  mechanism differs: Flutter has no `.env` support out of the box, so it's
+  a compile-time `--dart-define=API_BASE_URL=http://...` flag instead of
+  `mobile-rn/`'s runtime `EXPO_PUBLIC_API_BASE_URL` env var — passing one to
+  the other's build command does nothing.
+- **Auth persists via `shared_preferences`** (`lib/services/auth_provider.dart`,
+  a `ChangeNotifier` consumed through `Provider`/`context.watch`), under the
+  same `snapy_seller` key convention as the other frontends — no actual
+  storage is shared. Buyer id uses the same `Acheteur-XXXX` prefix as
+  `mobile-rn/` (stored under `snapy_buyer_id`), not the legacy app's
+  `Buyer-XXXX`.
+- `lib/models/product.dart` and `lib/theme/colors.dart` hold the shared
+  product model and the amber/ink color palette (ported from `web/`'s
+  design) respectively; `lib/widgets/` (`product_card`, `product_list_view`,
+  `category_tile`) are the reusable pieces the screens compose.
+- Targets Android, iOS, macOS, Linux, Windows, and web build folders were
+  all generated (`flutter create` default), even though this app will
+  likely only ship for Android/iOS in practice — don't assume every
+  platform folder needs maintaining.
 
 ## Working in this repo
 
@@ -234,11 +251,10 @@ greenfield, not "extend an existing feature."
 - For the current stack, keep the route/lib/middleware split in `backend/`
   and the component-per-concern split in `web/src/components/` rather than
   collapsing back into fewer files.
-- A backend API change (new field, new route, new validation rule) has two
-  frontend consumers to update today: `web/src/api.js` **and**
-  `mobile-rn/src/api.js` (`mobile-flutter/` has no API client yet, so
-  nothing to update there until it's built out). Check both existing
-  clients before calling an API change complete.
+- A backend API change (new field, new route, new validation rule) has
+  three frontend consumers to update: `web/src/api.js`,
+  `mobile-rn/src/api.js`, **and** `mobile-flutter/lib/services/api.dart`.
+  Check all three before calling an API change complete.
 - Reset the legacy demo by deleting `data/sellers.json`, `data/products.json`,
   and/or `data/chats.json` (recreated empty on next start). Reset the current
   stack by deleting `backend/data/snapy.db*`.

@@ -142,6 +142,17 @@ boot via `CREATE TABLE IF NOT EXISTS`).
 - Categories are a fixed in-code list (`CATEGORIES` in `lib/helpers.js`), not
   a DB table — `GET /api/products/categories` returns live per-category
   counts computed from `products`.
+- **Voice notes are optional, post-time only**: `POST /api/products` accepts
+  an optional `audio` multipart field alongside the required `image` one
+  (`upload.fields([...])` in `routes/products.js`, `fileFilter` in
+  `lib/upload.js` branches on `file.fieldname` to allow `audio/*` only for
+  that field). Stored as `products.audio_url`, nullable, serialized as
+  `audioUrl`. `PATCH /api/products/:id` has no audio parameter — editing a
+  product's voice note isn't supported, only name/category/image. Because
+  `products` predates this column, `db.js` has a `pragma_table_info` check
+  that runs `ALTER TABLE products ADD COLUMN audio_url TEXT` on existing
+  databases — `CREATE TABLE IF NOT EXISTS` alone doesn't add columns to a
+  table that already exists, easy to forget on the next schema change too.
 
 **Frontend** (`web/src/`): React + Vite, no router (all view-switching is
 local `useState` in `App.jsx` — `view` is one of
@@ -158,6 +169,11 @@ no global state library (props drilled from `App.jsx`).
   drag/drop + live camera via `getUserMedia` with front/back switch) reused
   by both the composer and the edit modal; pass `existingImageUrl` +
   `dropzoneClassName="edit-dropzone"` for the edit-modal sizing/layout.
+- `AudioField.jsx` is the optional voice-note recorder (`MediaRecorder` +
+  `getUserMedia({ audio: true })`), used only by `Composer.jsx` — there's no
+  equivalent in `EditModal.jsx`, voice notes are record-once-at-posting-time
+  only. `ProductCard.jsx` renders a plain `<audio controls>` when
+  `product.audioUrl` is present.
 - `api.js` is the only place that talks to the backend (`fetch` wrapper +
   `ApiError` with `.status`) — components never call `fetch` directly.
 - Seller auth persists in `localStorage` under `snapy_seller` (same key the
@@ -199,6 +215,13 @@ React tree with its own screens, navigation, and API client.
   in `mobile-rn/CLAUDE.md`) warning that Expo SDK docs move fast — check
   `https://docs.expo.dev/versions/v57.0.0/` for the pinned version before
   relying on remembered Expo APIs.
+- **Voice notes use `expo-audio`** (not the deprecated `expo-av`):
+  `AudioRecorderField.js` wraps `useAudioRecorder`/`useAudioRecorderState`
+  for recording and `useAudioPlayer`/`useAudioPlayerStatus` for instant
+  preview playback of the just-recorded clip, used only in
+  `ComposeScreen.js` — no edit-time support. `ProductCard.js` plays back an
+  existing product's `audioUrl` the same way. Recording requires
+  `setAudioModeAsync({ allowsRecording: true })` before `record()` on iOS.
 
 ## Architecture — mobile, second attempt (`mobile-flutter/`)
 
@@ -266,7 +289,18 @@ boilerplate).
   of the default `flutter create` scaffold): `NSCameraUsageDescription` /
   `NSPhotoLibraryUsageDescription` in
   `ios/Runner/Info.plist`, and `android.permission.CAMERA` in
-  `android/app/src/main/AndroidManifest.xml`.
+  `android/app/src/main/AndroidManifest.xml`. Same for microphone access:
+  `NSMicrophoneUsageDescription` / `android.permission.RECORD_AUDIO`.
+- **Voice notes use the `record` package for capture and `audioplayers` for
+  playback** (plus `path_provider` to get a writable temp path for the
+  recording, since `record` needs a file path up front on IO platforms) —
+  no single package does both. `widgets/audio_recorder_field.dart` wraps
+  both: `AudioRecorder` (`record`) for start/stop, `ap.AudioPlayer`
+  (`audioplayers`, aliased `as ap` to avoid clashing with `record`'s own
+  naming) for previewing the just-recorded clip. Used only in
+  `ComposeScreen` — no edit-time support. `ProductCard`'s
+  `_VoiceNoteButton` plays back an existing product's `audioUrl` with its
+  own `ap.AudioPlayer` instance the same way.
 
 ## Working in this repo
 

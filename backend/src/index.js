@@ -29,7 +29,7 @@ app.use("/api/products", productsRouter);
 app.use("/api/chats", chatsRouter);
 
 app.use((err, _req, res, _next) => {
-  if (err instanceof multer.MulterError || err.message?.includes("image")) {
+  if (err instanceof multer.MulterError || err.message?.includes("image") || err.message?.includes("audio")) {
     return res.status(400).json({ error: err.message });
   }
   console.error(err);

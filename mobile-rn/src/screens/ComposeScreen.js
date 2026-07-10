@@ -3,6 +3,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 import * as ImagePicker from "expo-image-picker";
 import { colors, radius } from "../theme";
 import { Field, PrimaryButton, SecondaryButton } from "../components/ui";
+import AudioRecorderField from "../components/AudioRecorderField";
 import { api, ApiError } from "../api";
 import { useAuth } from "../context/AuthContext";
 
@@ -10,6 +11,7 @@ export default function ComposeScreen({ navigation }) {
   const { auth, setAuth } = useAuth();
   const [categories, setCategories] = useState([]);
   const [photo, setPhoto] = useState(null); // { uri, name, type }
+  const [audioUri, setAudioUri] = useState(null);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState({ text: "", error: false });
@@ -63,6 +65,7 @@ export default function ComposeScreen({ navigation }) {
 
     const fd = new FormData();
     fd.append("image", { uri: photo.uri, name: photo.name, type: photo.type });
+    if (audioUri) fd.append("audio", { uri: audioUri, name: `voice-${Date.now()}.m4a`, type: "audio/m4a" });
     fd.append("name", name.trim());
     fd.append("category", category);
 
@@ -111,6 +114,8 @@ export default function ComposeScreen({ navigation }) {
           </Pressable>
         ))}
       </View>
+
+      <AudioRecorderField uri={audioUri} onChange={setAudioUri} />
 
       <Text style={styles.sellingAs}>
         Publication en tant que {auth?.storeName || auth?.maskedPhone} — les acheteurs peuvent vous contacter par chat ou WhatsApp.

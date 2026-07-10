@@ -12,8 +12,8 @@ export const productsRouter = Router();
 const getSellerByPhone = db.prepare("SELECT * FROM sellers WHERE phone = ?");
 const getProductById = db.prepare("SELECT * FROM products WHERE id = ?");
 const insertProduct = db.prepare(`
-  INSERT INTO products (id, name, category, image_url, description, seller_phone, created_at, updated_at)
-  VALUES (@id, @name, @category, @image_url, @description, @seller_phone, @created_at, @updated_at)
+  INSERT INTO products (id, name, category, image_url, audio_url, description, seller_phone, created_at, updated_at)
+  VALUES (@id, @name, @category, @image_url, @audio_url, @description, @seller_phone, @created_at, @updated_at)
 `);
 const updateProductStmt = db.prepare(`
   UPDATE products SET name = @name, category = @category, image_url = @image_url,
@@ -55,6 +55,7 @@ function serializeProduct(row) {
     name: row.name,
     category: normalizeCategory(row.category),
     imageUrl: row.image_url,
+    audioUrl: row.audio_url || null,
     description: row.description,
     vendorId: (row.seller_store_name || "").trim() || `Vendeur ${maskPhone(row.seller_phone)}`,
     storeName: row.seller_store_name || "",
@@ -77,15 +78,17 @@ productsRouter.get("/mine", requireSeller, (req, res) => {
   res.json(listMine.all(req.sellerPhone).map(serializeProduct));
 });
 
-productsRouter.post("/", requireSeller, upload.single("image"), async (req, res) => {
+productsRouter.post("/", requireSeller, upload.fields([{ name: "image", maxCount: 1 }, { name: "audio", maxCount: 1 }]), async (req, res) => {
   try {
     const { name } = req.body;
-    if (!req.file) return res.status(400).json({ error: "Une photo du produit est requise." });
+    const imageFile = req.files?.image?.[0];
+    const audioFile = req.files?.audio?.[0];
+    if (!imageFile) return res.status(400).json({ error: "Une photo du produit est requise." });
     if (!name || !name.trim()) return res.status(400).json({ error: "Le nom du produit est requis." });
 
     let description;
     try {
-      description = await generateTweetDescription(req.file.path, name.trim());
+      description = await generateTweetDescription(imageFile.path, name.trim());
     } catch (err) {
       console.error("Claude generation failed:", err.message);
       description = "Nouvelle annonce en ligne — jetez un œil à la photo !";
@@ -96,7 +99,8 @@ productsRouter.post("/", requireSeller, upload.single("image"), async (req, res)
       id: nanoid(12),
       name: name.trim(),
       category: normalizeCategory(req.body.category),
-      image_url: `/uploads/${req.file.filename}`,
+      image_url: `/uploads/${imageFile.filename}`,
+      audio_url: audioFile ? `/uploads/${audioFile.filename}` : null,
       description,
       seller_phone: req.sellerPhone,
       created_at: now,
@@ -173,6 +177,7 @@ productsRouter.delete("/:id", requireSeller, (req, res) => {
 
   deleteProductStmt.run(id); // ON DELETE CASCADE removes the product's chat messages too
   deleteUploadedFile(product.image_url);
+  deleteUploadedFile(product.audio_url);
   res.status(204).end();
 });
 

@@ -8,6 +8,7 @@ import '../api.dart';
 import '../auth.dart';
 import '../theme.dart';
 import '../widgets/app_field.dart';
+import '../widgets/audio_recorder_field.dart';
 import '../widgets/buttons.dart';
 
 class ComposeScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
   final _nameController = TextEditingController();
   List<Category> _categories = [];
   File? _photo;
+  File? _audio;
   String? _category;
   String _status = '';
   bool _statusError = false;
@@ -77,7 +79,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
     });
 
     try {
-      final product = await Api.createProduct(auth.token, name: _nameController.text.trim(), category: _category!, image: _photo!);
+      final product = await Api.createProduct(auth.token, name: _nameController.text.trim(), category: _category!, image: _photo!, audio: _audio);
       setState(() => _status = 'Publié → ${product.description}');
       await Future.delayed(const Duration(milliseconds: 900));
       if (mounted) Navigator.of(context).pop(true);
@@ -148,6 +150,8 @@ class _ComposeScreenState extends State<ComposeScreen> {
               );
             }).toList(),
           ),
+          const SizedBox(height: 16),
+          AudioRecorderField(file: _audio, onChanged: (file) => setState(() => _audio = file)),
           const SizedBox(height: 16),
           Text(
             'Publication en tant que ${(auth?.storeName.isNotEmpty ?? false) ? auth!.storeName : auth?.maskedPhone ?? ''} — les acheteurs peuvent vous contacter par chat ou WhatsApp.',

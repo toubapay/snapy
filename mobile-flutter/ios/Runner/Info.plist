@@ -49,5 +49,7 @@
 	<string>Snapy a besoin de l'appareil photo pour prendre une photo de votre produit.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Snapy a besoin d'accéder à vos photos pour choisir l'image d'un produit.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Snapy a besoin du micro pour enregistrer une note vocale sur votre annonce.</string>
 </dict>
 </plist>

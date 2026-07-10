@@ -14,6 +14,7 @@ function digitsOnly(str = "") {
 
 export default function ProductCard({ product: p, mine, isNew, apiBase, onOpenChat, onOpenBoutique, onEdit, onDelete }) {
   const imageUrl = p.imageUrl.startsWith("http") ? p.imageUrl : `${apiBase}${p.imageUrl}`;
+  const audioUrl = p.audioUrl ? (p.audioUrl.startsWith("http") ? p.audioUrl : `${apiBase}${p.audioUrl}`) : null;
 
   return (
     <article className={`card${isNew ? " card-new" : ""}`}>
@@ -24,6 +25,7 @@ export default function ProductCard({ product: p, mine, isNew, apiBase, onOpenCh
       <div className="stub">
         <p className="pname">{p.name}</p>
         <p className="pdesc">{p.description}</p>
+        {audioUrl && <audio className="pvoice" controls src={audioUrl} />}
 
         {!mine && (
           <button type="button" className="vendor-line" onClick={() => onOpenBoutique(p.sellerPhone, p.storeName || p.vendorId)}>

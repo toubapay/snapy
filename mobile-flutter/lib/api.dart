@@ -31,6 +31,7 @@ class Product {
   final String name;
   final String category;
   final String imageUrl;
+  final String? audioUrl;
   final String description;
   final String vendorId;
   final String storeName;
@@ -45,6 +46,7 @@ class Product {
     required this.name,
     required this.category,
     required this.imageUrl,
+    this.audioUrl,
     required this.description,
     required this.vendorId,
     required this.storeName,
@@ -60,6 +62,7 @@ class Product {
         name: json['name'],
         category: json['category'] ?? '',
         imageUrl: json['imageUrl'],
+        audioUrl: json['audioUrl'],
         description: json['description'] ?? '',
         vendorId: json['vendorId'] ?? '',
         storeName: json['storeName'] ?? '',
@@ -71,6 +74,11 @@ class Product {
       );
 
   String absoluteImageUrl(String base) => imageUrl.startsWith('http') ? imageUrl : '$base$imageUrl';
+
+  String? absoluteAudioUrl(String base) {
+    if (audioUrl == null || audioUrl!.isEmpty) return null;
+    return audioUrl!.startsWith('http') ? audioUrl : '$base$audioUrl';
+  }
 }
 
 class Category {
@@ -237,11 +245,12 @@ class Api {
     return (data as List).map((c) => Category.fromJson(c)).toList();
   }
 
-  static Future<Product> createProduct(String token, {required String name, required String category, required File image}) async {
+  static Future<Product> createProduct(String token, {required String name, required String category, required File image, File? audio}) async {
     final req = http.MultipartRequest('POST', Uri.parse('$base/api/products'));
     req.fields['name'] = name;
     req.fields['category'] = category;
     req.files.add(await http.MultipartFile.fromPath('image', image.path));
+    if (audio != null) req.files.add(await http.MultipartFile.fromPath('audio', audio.path));
     final data = await _request('/api/products', method: 'POST', token: token, multipart: req);
     return Product.fromJson(data);
   }

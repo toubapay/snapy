@@ -19,6 +19,12 @@ export const upload = multer({
   storage,
   limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
+    if (file.fieldname === "audio") {
+      if (!file.mimetype.startsWith("audio/")) {
+        return cb(new Error("Seuls les fichiers audio sont autorisés"));
+      }
+      return cb(null, true);
+    }
     if (!file.mimetype.startsWith("image/")) {
       return cb(new Error("Seuls les fichiers image sont autorisés"));
     }

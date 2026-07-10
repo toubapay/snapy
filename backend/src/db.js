@@ -24,6 +24,7 @@ db.exec(`
     name TEXT NOT NULL,
     category TEXT NOT NULL DEFAULT 'Autres',
     image_url TEXT NOT NULL,
+    audio_url TEXT,
     description TEXT NOT NULL,
     seller_phone TEXT NOT NULL REFERENCES sellers(phone) ON DELETE CASCADE,
     created_at INTEGER NOT NULL,
@@ -42,3 +43,10 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_chat_product ON chat_messages(product_id);
 `);
+
+// CREATE TABLE IF NOT EXISTS only applies to brand-new databases — existing
+// snapy.db files predate the audio_url column and need it added by hand.
+const hasAudioColumn = db.prepare("SELECT 1 FROM pragma_table_info('products') WHERE name = 'audio_url'").get();
+if (!hasAudioColumn) {
+  db.exec("ALTER TABLE products ADD COLUMN audio_url TEXT");
+}

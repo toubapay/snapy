@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart' as ap;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -27,6 +28,7 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = product;
     final imageUrl = p.absoluteImageUrl(Api.base);
+    final audioUrl = p.absoluteAudioUrl(Api.base);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -69,6 +71,10 @@ class ProductCard extends StatelessWidget {
                 Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.paper)),
                 const SizedBox(height: 6),
                 Text(p.description, style: const TextStyle(fontSize: 12, height: 1.5, color: AppColors.textDim)),
+                if (audioUrl != null) ...[
+                  const SizedBox(height: 8),
+                  _VoiceNoteButton(audioUrl: audioUrl),
+                ],
                 const SizedBox(height: 10),
                 if (!mine)
                   GestureDetector(
@@ -113,6 +119,59 @@ class ProductCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _VoiceNoteButton extends StatefulWidget {
+  final String audioUrl;
+
+  const _VoiceNoteButton({required this.audioUrl});
+
+  @override
+  State<_VoiceNoteButton> createState() => _VoiceNoteButtonState();
+}
+
+class _VoiceNoteButtonState extends State<_VoiceNoteButton> {
+  final _player = ap.AudioPlayer();
+  bool _playing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _player.onPlayerStateChanged.listen((state) {
+      if (mounted) setState(() => _playing = state == ap.PlayerState.playing);
+    });
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _toggle() async {
+    if (_playing) {
+      await _player.pause();
+    } else {
+      await _player.play(ap.UrlSource(widget.audioUrl));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: _toggle,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.panelRaised,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.hairline),
+        ),
+        child: Text(_playing ? '⏸ Note vocale' : '▶ Écouter la note vocale', style: const TextStyle(fontSize: 10.5, color: AppColors.teal)),
       ),
     );
   }

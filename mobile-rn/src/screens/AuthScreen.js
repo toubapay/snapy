@@ -14,6 +14,11 @@ export default function AuthScreen({ route, navigation }) {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  function switchMode(next) {
+    setMode(next);
+    setError("");
+  }
+
   async function handleSubmit() {
     setError("");
     setSubmitting(true);
@@ -32,10 +37,10 @@ export default function AuthScreen({ route, navigation }) {
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.tabs}>
-          <Pressable style={[styles.tab, mode === "login" && styles.tabActive]} onPress={() => setMode("login")}>
+          <Pressable style={[styles.tab, mode === "login" && styles.tabActive]} onPress={() => switchMode("login")}>
             <Text style={[styles.tabText, mode === "login" && styles.tabTextActive]}>Connexion</Text>
           </Pressable>
-          <Pressable style={[styles.tab, mode === "register" && styles.tabActive]} onPress={() => setMode("register")}>
+          <Pressable style={[styles.tab, mode === "register" && styles.tabActive]} onPress={() => switchMode("register")}>
             <Text style={[styles.tabText, mode === "register" && styles.tabTextActive]}>Inscription</Text>
           </Pressable>
         </View>

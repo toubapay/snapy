@@ -1,40 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/api.dart';
-import '../services/auth_provider.dart';
-import '../theme/colors.dart';
+
+import '../api.dart';
+import '../auth.dart';
+import '../theme.dart';
+import '../widgets/app_field.dart';
+import '../widgets/buttons.dart';
 
 class AuthScreen extends StatefulWidget {
-  final bool startInRegister;
-  const AuthScreen({super.key, this.startInRegister = false});
+  final String initialMode;
+
+  const AuthScreen({super.key, this.initialMode = 'login'});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  late bool _isLogin = !widget.startInRegister;
-  final _phoneCtrl = TextEditingController();
-  final _pinCtrl = TextEditingController();
-  final _storeNameCtrl = TextEditingController();
+  late String _mode = widget.initialMode;
+  final _phoneController = TextEditingController();
+  final _pinController = TextEditingController();
+  final _storeNameController = TextEditingController();
   String _error = '';
   bool _submitting = false;
 
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _pinController.dispose();
+    _storeNameController.dispose();
+    super.dispose();
+  }
+
   Future<void> _submit() async {
-    setState(() {
-      _error = '';
-      _submitting = true;
-    });
+    setState(() { _error = ''; _submitting = true; });
     try {
-      final data = _isLogin
-          ? await Api.instance.login(_phoneCtrl.text.trim(), _pinCtrl.text.trim())
-          : await Api.instance.register(_phoneCtrl.text.trim(), _pinCtrl.text.trim(), _storeNameCtrl.text.trim());
-      if (!mounted) return;
-      await context.read<AuthProvider>().setAuth(SellerAuth.fromJson(data));
-      if (!mounted) return;
-      Navigator.of(context).pop();
-    } catch (err) {
-      setState(() => _error = err is ApiException ? err.message : 'Une erreur s\'est produite.');
+      final data = _mode == 'login'
+          ? await Api.login(_phoneController.text.trim(), _pinController.text.trim())
+          : await Api.register(_phoneController.text.trim(), _pinController.text.trim(), _storeNameController.text.trim());
+      await context.read<AuthProvider>().setAuth(data);
+      if (mounted) Navigator.of(context).pop();
+    } on ApiError catch (err) {
+      setState(() => _error = err.message);
+    } catch (_) {
+      setState(() => _error = "Une erreur s'est produite.");
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -44,78 +53,66 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Compte vendeur')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(22),
           children: [
             Row(
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: _isLogin ? SnapyColors.amber : SnapyColors.hairline),
-                      foregroundColor: _isLogin ? SnapyColors.amber : SnapyColors.textDim,
-                    ),
-                    onPressed: () => setState(() => _isLogin = true),
-                    child: const Text('Connexion'),
-                  ),
-                ),
+                Expanded(child: _TabButton(label: 'Connexion', active: _mode == 'login', onTap: () => setState(() => _mode = 'login'))),
                 const SizedBox(width: 6),
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: !_isLogin ? SnapyColors.amber : SnapyColors.hairline),
-                      foregroundColor: !_isLogin ? SnapyColors.amber : SnapyColors.textDim,
-                    ),
-                    onPressed: () => setState(() => _isLogin = false),
-                    child: const Text('Inscription'),
-                  ),
-                ),
+                Expanded(child: _TabButton(label: 'Inscription', active: _mode == 'register', onTap: () => setState(() => _mode = 'register'))),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Text(
-              _isLogin
+              _mode == 'login'
                   ? 'Connectez-vous avec votre numéro de téléphone vendeur et votre code PIN.'
                   : 'Inscrivez-vous avec un numéro de téléphone et un code PIN de 4 à 6 chiffres — aucun e-mail requis.',
-              style: const TextStyle(color: SnapyColors.textDim, fontSize: 12, height: 1.4),
+              style: const TextStyle(color: AppColors.textDim, fontSize: 12, height: 1.5),
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _phoneCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(hintText: 'Numéro de téléphone — ex. +221771234567'),
-            ),
+            AppField(placeholder: 'Numéro de téléphone — ex. +221771234567', keyboardType: TextInputType.phone, controller: _phoneController),
             const SizedBox(height: 10),
-            TextField(
-              controller: _pinCtrl,
-              keyboardType: TextInputType.number,
-              obscureText: true,
-              maxLength: 6,
-              decoration: const InputDecoration(hintText: 'Code PIN (4 à 6 chiffres)'),
-            ),
-            if (!_isLogin) ...[
+            AppField(placeholder: 'Code PIN (4 à 6 chiffres)', keyboardType: TextInputType.number, obscureText: true, maxLength: 6, controller: _pinController),
+            if (_mode == 'register') ...[
               const SizedBox(height: 10),
-              TextField(
-                controller: _storeNameCtrl,
-                maxLength: 40,
-                decoration: const InputDecoration(hintText: 'Nom de la boutique (facultatif)'),
-              ),
+              AppField(placeholder: 'Nom de la boutique (facultatif)', maxLength: 40, controller: _storeNameController),
             ],
-            const SizedBox(height: 6),
-            ElevatedButton(
-              onPressed: _submitting ? null : _submit,
-              child: _submitting
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: SnapyColors.amberOn))
-                  : Text(_isLogin ? 'Se connecter' : 'Créer un compte'),
-            ),
+            const SizedBox(height: 10),
+            PrimaryButton(title: _mode == 'login' ? 'Se connecter' : 'Créer un compte', onPressed: _submitting ? null : _submit, loading: _submitting),
             if (_error.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text(_error, style: const TextStyle(color: SnapyColors.error, fontSize: 11.5)),
+              Text(_error, style: const TextStyle(color: AppColors.error, fontSize: 11.5)),
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _TabButton extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _TabButton({required this.label, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: active ? AppColors.amber : AppColors.hairline),
+          color: active ? const Color(0x14E8A33D) : null,
+        ),
+        child: Text(label, style: TextStyle(fontSize: 12, color: active ? AppColors.amber : AppColors.textDim)),
       ),
     );
   }

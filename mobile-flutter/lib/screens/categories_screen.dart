@@ -1,54 +1,60 @@
 import 'package:flutter/material.dart';
-import '../models/product.dart';
-import '../services/api.dart';
-import '../theme/colors.dart';
+
+import '../api.dart';
+import '../theme.dart';
 import '../widgets/category_tile.dart';
 import 'category_feed_screen.dart';
 
 class CategoriesScreen extends StatefulWidget {
-  const CategoriesScreen({super.key});
+  final Listenable? refreshSignal;
+
+  const CategoriesScreen({super.key, this.refreshSignal});
 
   @override
-  State<CategoriesScreen> createState() => CategoriesScreenState();
+  State<CategoriesScreen> createState() => _CategoriesScreenState();
 }
 
-class CategoriesScreenState extends State<CategoriesScreen> {
+class _CategoriesScreenState extends State<CategoriesScreen> {
   List<Category> _categories = [];
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    load();
+    widget.refreshSignal?.addListener(_load);
+    _load();
   }
 
-  Future<void> load() async {
-    setState(() => _loading = true);
+  @override
+  void dispose() {
+    widget.refreshSignal?.removeListener(_load);
+    super.dispose();
+  }
+
+  Future<void> _load() async {
     try {
-      final raw = await Api.instance.categories();
-      if (!mounted) return;
-      setState(() {
-        _categories = raw.map((e) => Category.fromJson(e as Map<String, dynamic>)).toList();
-        _loading = false;
-      });
+      final categories = await Api.categories();
+      if (mounted) setState(() => _categories = categories);
     } catch (_) {
-      if (!mounted) return;
-      setState(() => _loading = false);
+      // leave the previous cache if the refresh fails
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   void _openCategory(String name) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryFeedScreen(categoryName: name)));
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryFeedScreen(name: name)));
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: SnapyColors.amber));
+      return const Center(child: CircularProgressIndicator());
     }
+
     return RefreshIndicator(
-      color: SnapyColors.amber,
-      onRefresh: load,
+      color: AppColors.amber,
+      onRefresh: _load,
       child: GridView.builder(
         padding: const EdgeInsets.all(16),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -58,7 +64,7 @@ class CategoriesScreenState extends State<CategoriesScreen> {
           childAspectRatio: 1.7,
         ),
         itemCount: _categories.length,
-        itemBuilder: (context, i) => CategoryTile(category: _categories[i], onTap: _openCategory),
+        itemBuilder: (context, index) => CategoryTile(category: _categories[index], onTap: _openCategory),
       ),
     );
   }

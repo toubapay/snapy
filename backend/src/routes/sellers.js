@@ -97,7 +97,10 @@ sellersRouter.patch("/me", requireSeller, (req, res) => {
 sellersRouter.delete("/me", requireSeller, (req, res) => {
   const phone = req.sellerPhone;
   const owned = productsBySeller.all(phone);
-  for (const p of owned) deleteUploadedFile(p.image_url);
+  for (const p of owned) {
+    deleteUploadedFile(p.image_url);
+    deleteUploadedFile(p.audio_url);
+  }
 
   // ON DELETE CASCADE removes the seller's products and their chat messages.
   deleteSeller.run(phone);

@@ -1,6 +1,18 @@
 import { Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { colors, radius } from "../theme";
 import { api } from "../api";
+
+function VoiceNoteButton({ audioUrl }) {
+  const player = useAudioPlayer(audioUrl);
+  const status = useAudioPlayerStatus(player);
+
+  return (
+    <Pressable style={styles.voiceBtn} onPress={() => (status.playing ? player.pause() : player.play())}>
+      <Text style={styles.voiceBtnText}>{status.playing ? "⏸ Note vocale" : "▶ Écouter la note vocale"}</Text>
+    </Pressable>
+  );
+}
 
 function timeAgo(ts) {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -18,6 +30,7 @@ function digitsOnly(str = "") {
 
 export default function ProductCard({ product: p, mine, onOpenChat, onOpenBoutique, onEdit, onDelete }) {
   const imageUrl = p.imageUrl.startsWith("http") ? p.imageUrl : `${api.base}${p.imageUrl}`;
+  const audioUrl = p.audioUrl ? (p.audioUrl.startsWith("http") ? p.audioUrl : `${api.base}${p.audioUrl}`) : null;
 
   return (
     <View style={styles.card}>
@@ -33,6 +46,7 @@ export default function ProductCard({ product: p, mine, onOpenChat, onOpenBoutiq
       <View style={styles.stub}>
         <Text style={styles.pname}>{p.name}</Text>
         <Text style={styles.pdesc}>{p.description}</Text>
+        {!!audioUrl && <VoiceNoteButton audioUrl={audioUrl} />}
 
         {!mine && (
           <Pressable onPress={() => onOpenBoutique(p.sellerPhone, p.storeName || p.vendorId)}>
@@ -107,6 +121,16 @@ const styles = StyleSheet.create({
   pname: { fontWeight: "700", fontSize: 15, color: colors.paper, marginBottom: 6 },
   pdesc: { fontSize: 12, lineHeight: 18, color: colors.textDim, marginBottom: 10 },
   vendorLine: { fontSize: 10.5, color: colors.teal, marginBottom: 10 },
+  voiceBtn: {
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: colors.hairline,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginBottom: 10
+  },
+  voiceBtnText: { fontSize: 10.5, color: colors.teal },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 8 },
   iconBtn: {
     borderWidth: 1,

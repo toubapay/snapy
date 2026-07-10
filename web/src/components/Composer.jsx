@@ -1,9 +1,11 @@
 import { useState } from "react";
 import PhotoField from "./PhotoField";
+import AudioField from "./AudioField";
 import { api, ApiError } from "../api";
 
 export default function Composer({ auth, categories, onOpenAuth, onPosted, onPostingChange }) {
   const [photo, setPhoto] = useState(null);
+  const [audio, setAudio] = useState(null);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState({ text: "", type: "" });
@@ -41,6 +43,7 @@ export default function Composer({ auth, categories, onOpenAuth, onPosted, onPos
 
     const fd = new FormData();
     fd.append("image", photo);
+    if (audio) fd.append("audio", audio);
     fd.append("name", name.trim());
     fd.append("category", category);
 
@@ -55,6 +58,7 @@ export default function Composer({ auth, categories, onOpenAuth, onPosted, onPos
       setName("");
       setCategory("");
       setPhoto(null);
+      setAudio(null);
       onPosted(data);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
@@ -98,6 +102,8 @@ export default function Composer({ auth, categories, onOpenAuth, onPosted, onPos
               </option>
             ))}
           </select>
+
+          <AudioField file={audio} onFileChange={setAudio} />
 
           <p className="selling-as">
             Publication en tant que {auth.storeName || auth.maskedPhone} — les acheteurs peuvent vous contacter par chat ou WhatsApp.

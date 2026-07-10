@@ -1,13 +1,15 @@
-import 'dart:typed_data';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../models/product.dart';
-import '../services/api.dart';
-import '../services/auth_provider.dart';
-import '../theme/colors.dart';
+
+import '../api.dart';
+import '../auth.dart';
+import '../theme.dart';
+import '../widgets/app_field.dart';
+import '../widgets/audio_recorder_field.dart';
+import '../widgets/buttons.dart';
 
 class ComposeScreen extends StatefulWidget {
   const ComposeScreen({super.key});
@@ -18,14 +20,11 @@ class ComposeScreen extends StatefulWidget {
 
 class _ComposeScreenState extends State<ComposeScreen> {
   final _picker = ImagePicker();
-  final _nameCtrl = TextEditingController();
-
-  Uint8List? _photoBytes;
-  String? _photoName;
-  String? _photoMime;
+  final _nameController = TextEditingController();
   List<Category> _categories = [];
+  File? _photo;
+  File? _audio;
   String? _category;
-
   String _status = '';
   bool _statusError = false;
   bool _submitting = false;
@@ -33,82 +32,60 @@ class _ComposeScreenState extends State<ComposeScreen> {
   @override
   void initState() {
     super.initState();
-    Api.instance.categories().then((raw) {
-      if (!mounted) return;
-      setState(() => _categories = raw.map((e) => Category.fromJson(e as Map<String, dynamic>)).toList());
-    }).catchError((_) => null);
+    Api.categories().then((c) => setState(() => _categories = c)).catchError((_) {});
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
   }
 
   Future<void> _pick(ImageSource source) async {
     try {
       final file = await _picker.pickImage(source: source, imageQuality: 85);
-      if (file == null) return;
-      final bytes = await file.readAsBytes();
-      setState(() {
-        _photoBytes = bytes;
-        _photoName = file.name;
-        _photoMime = file.mimeType ?? 'image/jpeg';
-      });
+      if (file != null) setState(() => _photo = File(file.path));
     } catch (_) {
       setState(() {
-        _status = "Impossible d'accéder à la caméra ou à la galerie.";
+        _status = source == ImageSource.camera
+            ? "Autorisez l'accès à la caméra pour prendre une photo."
+            : 'Autorisez l\'accès à vos photos pour en choisir une.';
         _statusError = true;
       });
     }
   }
 
   Future<void> _submit() async {
-    setState(() {
-      _status = '';
-      _statusError = false;
-    });
+    setState(() { _status = ''; _statusError = false; });
 
-    if (_photoBytes == null) {
-      setState(() {
-        _status = "Ajoutez d'abord une photo du produit.";
-        _statusError = true;
-      });
+    if (_photo == null) {
+      setState(() { _status = "Ajoutez d'abord une photo du produit."; _statusError = true; });
       return;
     }
-    if (_nameCtrl.text.trim().isEmpty) {
-      setState(() {
-        _status = 'Le nom du produit est requis.';
-        _statusError = true;
-      });
+    if (_nameController.text.trim().isEmpty) {
+      setState(() { _status = 'Le nom du produit est requis.'; _statusError = true; });
       return;
     }
     if (_category == null) {
-      setState(() {
-        _status = 'Choisissez une catégorie pour votre produit.';
-        _statusError = true;
-      });
+      setState(() { _status = 'Choisissez une catégorie pour votre produit.'; _statusError = true; });
       return;
     }
 
-    final auth = context.read<AuthProvider>().auth;
-    if (auth == null) return;
-
+    final auth = context.read<AuthProvider>().auth!;
     setState(() {
       _submitting = true;
       _status = "Génération d'une description façon Twitter à partir de votre photo…";
+      _statusError = false;
     });
 
     try {
-      final image = http.MultipartFile.fromBytes(
-        'image',
-        _photoBytes!,
-        filename: _photoName ?? 'photo.jpg',
-        contentType: MediaType.parse(_photoMime ?? 'image/jpeg'),
-      );
-      final data = await Api.instance.createProduct(auth.token, _nameCtrl.text.trim(), _category!, image);
-      setState(() => _status = 'Publié → ${data['description']}');
+      final product = await Api.createProduct(auth.token, name: _nameController.text.trim(), category: _category!, image: _photo!, audio: _audio);
+      setState(() => _status = 'Publié → ${product.description}');
       await Future.delayed(const Duration(milliseconds: 900));
       if (mounted) Navigator.of(context).pop(true);
-    } catch (err) {
-      setState(() {
-        _status = err is ApiException ? err.message : 'Une erreur s\'est produite.';
-        _statusError = true;
-      });
+    } on ApiError catch (err) {
+      if (err.status == 401) await context.read<AuthProvider>().setAuth(null);
+      setState(() { _status = err.message; _statusError = true; });
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -120,87 +97,73 @@ class _ComposeScreenState extends State<ComposeScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Publier un produit')),
-      body: SingleChildScrollView(
+      body: ListView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            GestureDetector(
-              onTap: () => _pick(ImageSource.gallery),
-              child: AspectRatio(
-                aspectRatio: 1,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: SnapyColors.panel,
-                    borderRadius: BorderRadius.circular(snapyRadius),
-                    border: Border.all(color: SnapyColors.hairline, width: 1.5),
-                    image: _photoBytes != null ? DecorationImage(image: MemoryImage(_photoBytes!), fit: BoxFit.cover) : null,
-                  ),
-                  child: _photoBytes == null
-                      ? const Center(child: Text('Aucune photo sélectionnée', style: TextStyle(color: SnapyColors.textDim, fontSize: 12)))
-                      : null,
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(onPressed: () => _pick(ImageSource.camera), child: const Text('📷 Prendre une photo')),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(onPressed: () => _pick(ImageSource.gallery), child: const Text('🖼️ Galerie')),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _nameCtrl,
-              maxLength: 80,
-              decoration: const InputDecoration(hintText: 'Nom du produit — ex. Veste en jean vintage'),
-            ),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _categories
-                  .map(
-                    (c) => ChoiceChip(
-                      label: Text(c.name),
-                      selected: _category == c.name,
-                      onSelected: (_) => setState(() => _category = c.name),
-                      backgroundColor: SnapyColors.panel,
-                      selectedColor: const Color(0x1AE8A33D),
-                      side: BorderSide(color: _category == c.name ? SnapyColors.amber : SnapyColors.hairline),
-                      labelStyle: TextStyle(color: _category == c.name ? SnapyColors.amber : SnapyColors.textDim, fontSize: 12),
-                    ),
+        children: [
+          GestureDetector(
+            onTap: () => _pick(ImageSource.gallery),
+            child: _photo != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(kRadius),
+                    child: AspectRatio(aspectRatio: 1, child: Image.file(_photo!, fit: BoxFit.cover)),
                   )
-                  .toList(),
-            ),
-            const SizedBox(height: 14),
-            if (auth != null)
-              Text(
-                'Publication en tant que ${auth.storeName.isNotEmpty ? auth.storeName : auth.maskedPhone} — les acheteurs peuvent vous contacter par chat ou WhatsApp.',
-                style: const TextStyle(color: SnapyColors.teal, fontSize: 10.5),
-              ),
-            const SizedBox(height: 14),
-            ElevatedButton(
-              onPressed: _submitting ? null : _submit,
-              child: _submitting
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: SnapyColors.amberOn))
-                  : const Text('Publier le produit'),
-            ),
-            if (_status.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Text(
-                  _status,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: _statusError ? SnapyColors.error : SnapyColors.textDim, fontSize: 12),
+                : AspectRatio(
+                    aspectRatio: 1,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.panel,
+                        borderRadius: BorderRadius.circular(kRadius),
+                        border: Border.all(color: AppColors.hairline, width: 1.5, style: BorderStyle.solid),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text('Aucune photo sélectionnée', style: TextStyle(color: AppColors.textDim, fontSize: 12)),
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(child: SecondaryButton(title: '📷 Prendre une photo', onPressed: () => _pick(ImageSource.camera))),
+              const SizedBox(width: 8),
+              Expanded(child: SecondaryButton(title: '🖼️ Galerie', onPressed: () => _pick(ImageSource.gallery))),
+            ],
+          ),
+          const SizedBox(height: 16),
+          AppField(placeholder: 'Nom du produit — ex. Veste en jean vintage', maxLength: 80, controller: _nameController),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _categories.map((c) {
+              final active = _category == c.name;
+              return GestureDetector(
+                onTap: () => setState(() => _category = c.name),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: active ? AppColors.amber : AppColors.hairline),
+                    color: active ? const Color(0x1AE8A33D) : null,
+                  ),
+                  child: Text(c.name, style: TextStyle(fontSize: 12, color: active ? AppColors.amber : AppColors.textDim)),
                 ),
-              ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          AudioRecorderField(file: _audio, onChanged: (file) => setState(() => _audio = file)),
+          const SizedBox(height: 16),
+          Text(
+            'Publication en tant que ${(auth?.storeName.isNotEmpty ?? false) ? auth!.storeName : auth?.maskedPhone ?? ''} — les acheteurs peuvent vous contacter par chat ou WhatsApp.',
+            style: const TextStyle(color: AppColors.teal, fontSize: 10.5),
+          ),
+          const SizedBox(height: 14),
+          PrimaryButton(title: 'Publier le produit', onPressed: _submitting ? null : _submit, loading: _submitting),
+          if (_status.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(_status, textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: _statusError ? AppColors.error : AppColors.textDim)),
           ],
-        ),
+        ],
       ),
     );
   }

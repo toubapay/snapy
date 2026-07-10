@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/auth_provider.dart';
-import '../theme/colors.dart';
-import '../widgets/product_list_view.dart';
-import 'auth_screen.dart';
-import 'edit_product_screen.dart';
+
+import '../auth.dart';
+import '../theme.dart';
+import '../widgets/buttons.dart';
+import 'product_list_screen.dart';
 
 class MesAnnoncesScreen extends StatelessWidget {
-  const MesAnnoncesScreen({super.key});
+  final Listenable refreshSignal;
+  final VoidCallback onRequireAuth;
+
+  const MesAnnoncesScreen({super.key, required this.refreshSignal, required this.onRequireAuth});
 
   @override
   Widget build(BuildContext context) {
@@ -23,24 +26,20 @@ class MesAnnoncesScreen extends StatelessWidget {
               const Text(
                 'Connectez-vous avec votre compte vendeur pour voir vos annonces.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: SnapyColors.textDim, fontSize: 13),
+                style: TextStyle(color: AppColors.textDim, fontSize: 13),
               ),
               const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AuthScreen())),
-                child: const Text('Se connecter / S\'inscrire'),
-              ),
+              PrimaryButton(title: 'Se connecter / S\'inscrire', onPressed: onRequireAuth),
             ],
           ),
         ),
       );
     }
 
-    return ProductListView(
-      mode: FeedMode.mine,
-      emptyText: 'Vous n\'avez encore publié aucune annonce.',
-      onEdit: (p) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => EditProductScreen(product: p))),
-      onLoggedOut: () => context.read<AuthProvider>().setAuth(null),
+    return ProductListScreen(
+      mode: ProductListMode.mine,
+      emptyText: "Vous n'avez encore publié aucune annonce.",
+      refreshSignal: refreshSignal,
     );
   }
 }

@@ -5,6 +5,7 @@ import TopBar from "./components/TopBar";
 import MainNav from "./components/MainNav";
 import Composer from "./components/Composer";
 import Feed from "./components/Feed";
+import ProductDetail from "./components/ProductDetail";
 import AuthModal from "./components/AuthModal";
 import AccountModal from "./components/AccountModal";
 import EditModal from "./components/EditModal";
@@ -20,6 +21,8 @@ export default function App() {
   const [categories, setCategories] = useState([]);
   const [highlightId, setHighlightId] = useState(null);
   const [posting, setPosting] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [detailReturn, setDetailReturn] = useState(null);
 
   const [authModal, setAuthModal] = useState({ open: false, mode: "login" });
   const [accountModalOpen, setAccountModalOpen] = useState(false);
@@ -39,7 +42,7 @@ export default function App() {
   }, [loadCategories]);
 
   const refreshFeed = useCallback(async () => {
-    if (view === "categories") return;
+    if (view === "categories" || view === "productDetail") return;
     if (view === "mine" && !auth) {
       setView("all");
       return;
@@ -100,6 +103,21 @@ export default function App() {
     switchView(view === "categoryFiltered" ? "categories" : "all");
   }
 
+  function openProductDetail(product) {
+    setDetailReturn({ view, activeBoutique, activeCategory });
+    setSelectedProduct(product);
+    setView("productDetail");
+  }
+
+  function closeProductDetail() {
+    const back = detailReturn || { view: "all", activeBoutique: null, activeCategory: null };
+    setView(back.view);
+    setActiveBoutique(back.activeBoutique);
+    setActiveCategory(back.activeCategory);
+    setSelectedProduct(null);
+    setDetailReturn(null);
+  }
+
   function handlePosted(product) {
     setHighlightId(product.id);
     setActiveBoutique(null);
@@ -158,32 +176,45 @@ export default function App() {
       <MainNav activeView={navActiveView} onSwitch={handleNavSwitch} />
 
       <main>
-        <Composer
-          auth={auth}
-          categories={categories}
-          onOpenAuth={(mode) => setAuthModal({ open: true, mode })}
-          onPosted={handlePosted}
-          onPostingChange={setPosting}
-        />
+        {view === "productDetail" && selectedProduct ? (
+          <ProductDetail
+            product={selectedProduct}
+            apiBase={api.base}
+            onBack={closeProductDetail}
+            onOpenBoutique={openBoutique}
+            onOpenChat={setChatProduct}
+          />
+        ) : (
+          <>
+            <Composer
+              auth={auth}
+              categories={categories}
+              onOpenAuth={(mode) => setAuthModal({ open: true, mode })}
+              onPosted={handlePosted}
+              onPostingChange={setPosting}
+            />
 
-        <Feed
-          view={view}
-          title={titles[view]}
-          emptyText={emptyTexts[view]}
-          showBack={view === "boutique" || view === "categoryFiltered"}
-          onBack={handleBack}
-          products={products}
-          categories={categories}
-          mine={view === "mine"}
-          highlightId={highlightId}
-          apiBase={api.base}
-          posting={posting}
-          onSelectCategory={openCategoryProducts}
-          onOpenChat={setChatProduct}
-          onOpenBoutique={openBoutique}
-          onEdit={(id) => setEditingProduct(products.find((p) => p.id === id) || null)}
-          onDelete={handleDeleteProduct}
-        />
+            <Feed
+              view={view}
+              title={titles[view]}
+              emptyText={emptyTexts[view]}
+              showBack={view === "boutique" || view === "categoryFiltered"}
+              onBack={handleBack}
+              products={products}
+              categories={categories}
+              mine={view === "mine"}
+              highlightId={highlightId}
+              apiBase={api.base}
+              posting={posting}
+              onSelectCategory={openCategoryProducts}
+              onOpenChat={setChatProduct}
+              onOpenBoutique={openBoutique}
+              onOpenDetail={openProductDetail}
+              onEdit={(id) => setEditingProduct(products.find((p) => p.id === id) || null)}
+              onDelete={handleDeleteProduct}
+            />
+          </>
+        )}
       </main>
 
       <footer>

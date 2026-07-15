@@ -17,6 +17,7 @@ export default function Feed({
   onSelectCategory,
   onOpenChat,
   onOpenBoutique,
+  onOpenDetail,
   onEdit,
   onDelete
 }) {
@@ -49,6 +50,7 @@ export default function Feed({
                 apiBase={apiBase}
                 onOpenChat={onOpenChat}
                 onOpenBoutique={onOpenBoutique}
+                onOpenDetail={onOpenDetail}
                 onEdit={onEdit}
                 onDelete={onDelete}
               />

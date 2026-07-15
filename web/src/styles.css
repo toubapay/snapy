@@ -1081,6 +1081,30 @@ main {
   margin: 0 0 6px;
   color: var(--paper);
 }
+.pname-btn, .photo-open-btn {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.pname-btn:hover { text-decoration: underline; }
+
+.more-link {
+  display: inline-block;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0 0 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.01em;
+  color: var(--amber);
+  cursor: pointer;
+}
+.more-link:hover { text-decoration: underline; }
 .card .pdesc {
   font-size: 12px;
   line-height: 1.5;
@@ -1146,6 +1170,41 @@ main {
   margin-top: 8px;
   font-size: 10px;
   color: var(--hairline);
+}
+
+.detail-card {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) 1fr;
+  gap: 26px;
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 18px;
+  animation: rise 0.35s ease both;
+}
+.detail-photo-wrap {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: #0c0c12;
+}
+.detail-photo { width: 100%; height: 100%; object-fit: cover; }
+.detail-body { display: flex; flex-direction: column; min-width: 0; }
+.detail-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  margin: 0 0 14px;
+}
+.detail-voice { display: block; width: 100%; height: 34px; margin: 0 0 14px; }
+.detail-boutique-link { font-size: 12px; margin-bottom: 16px; }
+.detail-contact-actions { margin-bottom: 14px; }
+.phone-btn { border-color: rgba(232,163,61,0.35); color: var(--amber); }
+.phone-btn:hover { border-color: var(--amber); }
+
+@media (max-width: 640px) {
+  .detail-card { grid-template-columns: 1fr; }
 }
 
 .empty {

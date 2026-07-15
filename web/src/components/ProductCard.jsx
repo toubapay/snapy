@@ -12,20 +12,25 @@ function digitsOnly(str = "") {
   return str.replace(/[^\d]/g, "");
 }
 
-export default function ProductCard({ product: p, mine, isNew, apiBase, onOpenChat, onOpenBoutique, onEdit, onDelete }) {
+export default function ProductCard({ product: p, mine, isNew, apiBase, onOpenChat, onOpenBoutique, onOpenDetail, onEdit, onDelete }) {
   const imageUrl = p.imageUrl.startsWith("http") ? p.imageUrl : `${apiBase}${p.imageUrl}`;
   const audioUrl = p.audioUrl ? (p.audioUrl.startsWith("http") ? p.audioUrl : `${apiBase}${p.audioUrl}`) : null;
 
   return (
     <article className={`card${isNew ? " card-new" : ""}`}>
-      <div className="photo-wrap">
+      <button type="button" className="photo-wrap photo-open-btn" onClick={() => onOpenDetail(p)} aria-label={`Voir l'annonce ${p.name}`}>
         <img className="photo" src={imageUrl} alt={p.name} loading="lazy" />
         <span className="vendor-tag">{p.vendorId}</span>
-      </div>
+      </button>
       <div className="stub">
-        <p className="pname">{p.name}</p>
+        <button type="button" className="pname pname-btn" onClick={() => onOpenDetail(p)}>
+          {p.name}
+        </button>
         <p className="pdesc">{p.description}</p>
         {audioUrl && <audio className="pvoice" controls src={audioUrl} />}
+        <button type="button" className="more-link" onClick={() => onOpenDetail(p)}>
+          Plus →
+        </button>
 
         {!mine && (
           <button type="button" className="vendor-line" onClick={() => onOpenBoutique(p.sellerPhone, p.storeName || p.vendorId)}>

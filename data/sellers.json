@@ -4,5 +4,11 @@
     "pinHash": "$2a$10$XQsQKWqaRuwOh/Ewc0jV0uzv5IpiRcbP0Pfe9VcBC3Opb9Jxb2VlS",
     "createdAt": 1783349517932,
     "storeName": "Touba Boutique"
+  },
+  {
+    "phone": "773581420",
+    "pinHash": "$2a$10$RB2IcO.GBlZpLfHshYMys.s0A15Hksze6fm6AqCOQfJhJQkRgXBr6",
+    "storeName": "",
+    "createdAt": 1783689422273
   }
 ]

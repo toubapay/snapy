@@ -5,9 +5,9 @@
       "Bash(ls .env)",
       "Read(//tmp/**)",
       "Bash(curl -s -w \" [%{http_code}]\" http://localhost:4000/api/products)",
+      "Bash(git check-ignore *)",
       "Bash(git add *)",
-      "Bash(git reset *)",
-      "Bash(git config *)"
+      "Bash(git status *)"
     ]
   }
 }

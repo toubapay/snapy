@@ -11,6 +11,7 @@ class ProductCard extends StatelessWidget {
   final bool mine;
   final void Function(Product) onOpenChat;
   final void Function(String phone, String label) onOpenBoutique;
+  final void Function(Product) onOpenDetail;
   final void Function(Product) onEdit;
   final void Function(String id) onDelete;
 
@@ -20,6 +21,7 @@ class ProductCard extends StatelessWidget {
     required this.mine,
     required this.onOpenChat,
     required this.onOpenBoutique,
+    required this.onOpenDetail,
     required this.onEdit,
     required this.onDelete,
   });
@@ -41,26 +43,29 @@ class ProductCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
-            children: [
-              AspectRatio(
-                aspectRatio: 1,
-                child: Container(
-                  color: const Color(0xFF0C0C12),
-                  child: Image.network(imageUrl, fit: BoxFit.cover),
+          InkWell(
+            onTap: () => onOpenDetail(p),
+            child: Stack(
+              children: [
+                AspectRatio(
+                  aspectRatio: 1,
+                  child: Container(
+                    color: const Color(0xFF0C0C12),
+                    child: Image.network(imageUrl, fit: BoxFit.cover),
+                  ),
                 ),
-              ),
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.6),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(color: const Color(0xBF100F16), borderRadius: BorderRadius.circular(20)),
-                  child: Text(p.vendorId, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.teal, fontSize: 10)),
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.6),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(color: const Color(0xBF100F16), borderRadius: BorderRadius.circular(20)),
+                    child: Text(p.vendorId, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.teal, fontSize: 10)),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           Container(
             padding: const EdgeInsets.all(14),
@@ -68,13 +73,21 @@ class ProductCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.paper)),
+                GestureDetector(
+                  onTap: () => onOpenDetail(p),
+                  child: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.paper)),
+                ),
                 const SizedBox(height: 6),
                 Text(p.description, style: const TextStyle(fontSize: 12, height: 1.5, color: AppColors.textDim)),
                 if (audioUrl != null) ...[
                   const SizedBox(height: 8),
                   _VoiceNoteButton(audioUrl: audioUrl),
                 ],
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => onOpenDetail(p),
+                  child: const Text('Plus →', style: TextStyle(fontSize: 10.5, color: AppColors.amber)),
+                ),
                 const SizedBox(height: 10),
                 if (!mine)
                   GestureDetector(

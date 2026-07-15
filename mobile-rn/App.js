@@ -13,6 +13,7 @@ import CategoriesScreen from "./src/screens/CategoriesScreen";
 import MesAnnoncesScreen from "./src/screens/MesAnnoncesScreen";
 import BoutiqueScreen from "./src/screens/BoutiqueScreen";
 import CategoryFeedScreen from "./src/screens/CategoryFeedScreen";
+import ProductDetailScreen from "./src/screens/ProductDetailScreen";
 import ComposeScreen from "./src/screens/ComposeScreen";
 import EditProductScreen from "./src/screens/EditProductScreen";
 import ChatScreen from "./src/screens/ChatScreen";
@@ -103,6 +104,7 @@ function RootNavigator() {
       <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
       <Stack.Screen name="Boutique" component={BoutiqueScreen} options={{ title: "Boutique" }} />
       <Stack.Screen name="CategoryFeed" component={CategoryFeedScreen} options={{ title: "Catégorie" }} />
+      <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <Stack.Screen name="Compose" component={ComposeScreen} options={{ title: "Publier un produit", presentation: "modal" }} />
       <Stack.Screen name="EditProduct" component={EditProductScreen} options={{ title: "Modifier l'annonce", presentation: "modal" }} />
       <Stack.Screen name="Chat" component={ChatScreen} options={{ presentation: "modal" }} />

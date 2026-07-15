@@ -8,6 +8,7 @@ import '../widgets/product_card.dart';
 import 'boutique_screen.dart';
 import 'chat_screen.dart';
 import 'edit_product_screen.dart';
+import 'product_detail_screen.dart';
 
 enum ProductListMode { all, top, mine, boutique, categoryFiltered }
 
@@ -104,6 +105,10 @@ class ProductListScreenState extends State<ProductListScreen> {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatScreen(product: product), fullscreenDialog: true));
   }
 
+  void _openDetail(Product product) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProductDetailScreen(product: product)));
+  }
+
   void _openEdit(Product product) {
     Navigator.of(context)
         .push(MaterialPageRoute(builder: (_) => EditProductScreen(product: product, onSaved: load), fullscreenDialog: true));
@@ -157,6 +162,7 @@ class ProductListScreenState extends State<ProductListScreen> {
                 mine: widget.mode == ProductListMode.mine,
                 onOpenChat: _openChat,
                 onOpenBoutique: _openBoutique,
+                onOpenDetail: _openDetail,
                 onEdit: _openEdit,
                 onDelete: _handleDelete,
               ),

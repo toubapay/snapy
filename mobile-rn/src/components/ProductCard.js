@@ -28,25 +28,32 @@ function digitsOnly(str = "") {
   return str.replace(/[^\d]/g, "");
 }
 
-export default function ProductCard({ product: p, mine, onOpenChat, onOpenBoutique, onEdit, onDelete }) {
+export default function ProductCard({ product: p, mine, onOpenChat, onOpenBoutique, onOpenDetail, onEdit, onDelete }) {
   const imageUrl = p.imageUrl.startsWith("http") ? p.imageUrl : `${api.base}${p.imageUrl}`;
   const audioUrl = p.audioUrl ? (p.audioUrl.startsWith("http") ? p.audioUrl : `${api.base}${p.audioUrl}`) : null;
 
   return (
     <View style={styles.card}>
-      <View style={styles.photoWrap}>
-        <Image source={{ uri: imageUrl }} style={styles.photo} />
-        <View style={styles.vendorTag}>
-          <Text style={styles.vendorTagText} numberOfLines={1}>
-            {p.vendorId}
-          </Text>
+      <Pressable onPress={() => onOpenDetail(p)}>
+        <View style={styles.photoWrap}>
+          <Image source={{ uri: imageUrl }} style={styles.photo} />
+          <View style={styles.vendorTag}>
+            <Text style={styles.vendorTagText} numberOfLines={1}>
+              {p.vendorId}
+            </Text>
+          </View>
         </View>
-      </View>
+      </Pressable>
 
       <View style={styles.stub}>
-        <Text style={styles.pname}>{p.name}</Text>
+        <Pressable onPress={() => onOpenDetail(p)}>
+          <Text style={styles.pname}>{p.name}</Text>
+        </Pressable>
         <Text style={styles.pdesc}>{p.description}</Text>
         {!!audioUrl && <VoiceNoteButton audioUrl={audioUrl} />}
+        <Pressable onPress={() => onOpenDetail(p)}>
+          <Text style={styles.moreLink}>Plus →</Text>
+        </Pressable>
 
         {!mine && (
           <Pressable onPress={() => onOpenBoutique(p.sellerPhone, p.storeName || p.vendorId)}>
@@ -121,6 +128,7 @@ const styles = StyleSheet.create({
   pname: { fontWeight: "700", fontSize: 15, color: colors.paper, marginBottom: 6 },
   pdesc: { fontSize: 12, lineHeight: 18, color: colors.textDim, marginBottom: 10 },
   vendorLine: { fontSize: 10.5, color: colors.teal, marginBottom: 10 },
+  moreLink: { fontSize: 10.5, color: colors.amber, marginBottom: 10 },
   voiceBtn: {
     alignSelf: "flex-start",
     borderWidth: 1,

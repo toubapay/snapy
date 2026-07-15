@@ -56,6 +56,10 @@ export default function ProductListScreen({ mode, sellerPhone, categoryName, emp
     navigation.navigate("Chat", { product });
   }
 
+  function openDetail(product) {
+    navigation.navigate("ProductDetail", { product });
+  }
+
   function openEdit(product) {
     navigation.navigate("EditProduct", { product, onSaved: load });
   }
@@ -90,6 +94,7 @@ export default function ProductListScreen({ mode, sellerPhone, categoryName, emp
           mine={mode === "mine"}
           onOpenChat={openChat}
           onOpenBoutique={openBoutique}
+          onOpenDetail={openDetail}
           onEdit={openEdit}
           onDelete={handleDelete}
         />

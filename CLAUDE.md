@@ -175,14 +175,16 @@ local `useState` in `App.jsx` — `view` is one of
   only. `ProductCard.jsx` renders a plain `<audio controls>` when
   `product.audioUrl` is present.
 - **`ProductDetail.jsx`** is a full-page product view (`view === "productDetail"`),
-  web-only — no equivalent in `mobile-rn`/`mobile-flutter` yet, which still
-  only show the trimmed card. Opened from `ProductCard.jsx` via a clickable
-  photo/name or the "Plus →" link (`onOpenDetail`); `App.jsx` snapshots
+  opened from `ProductCard.jsx` via a clickable photo/name or the "Plus →"
+  link (`onOpenDetail`); `App.jsx` snapshots
   `{ view, activeBoutique, activeCategory }` into `detailReturn` before
   switching so the back button restores wherever the user came from
   (all/top/mine/boutique/categoryFiltered) instead of always landing on
   "all". Reuses `openBoutique`/`setChatProduct` from `App.jsx` rather than
-  duplicating boutique/chat logic.
+  duplicating boutique/chat logic. `mobile-rn`'s `ProductDetailScreen.js`
+  and `mobile-flutter`'s `product_detail_screen.dart` are separate
+  implementations of the same idea (see their respective sections) — kept
+  in sync by hand, not shared code.
 - `api.js` is the only place that talks to the backend (`fetch` wrapper +
   `ApiError` with `.status`) — components never call `fetch` directly.
 - Seller auth persists in `localStorage` under `snapy_seller` (same key the
@@ -231,6 +233,13 @@ React tree with its own screens, navigation, and API client.
   `ComposeScreen.js` — no edit-time support. `ProductCard.js` plays back an
   existing product's `audioUrl` the same way. Recording requires
   `setAudioModeAsync({ allowsRecording: true })` before `record()` on iOS.
+- **`ProductDetailScreen.js`** is a pushed stack screen (registered as
+  `"ProductDetail"` in `App.js`, not a modal — same presentation as
+  `Boutique`/`CategoryFeed`), opened from `ProductCard.js` via a `Pressable`
+  photo/name or its "Plus →" text, wired through `ProductListScreen.js`'s
+  `openDetail`. Duplicates (doesn't share) the voice-note playback and
+  WhatsApp/`timeAgo`/`digitsOnly` helpers already in `ProductCard.js`, plus
+  adds a `tel:` link via `Linking.openURL` for the phone-call action.
 
 ## Architecture — mobile, second attempt (`mobile-flutter/`)
 
@@ -310,6 +319,14 @@ boilerplate).
   `ComposeScreen` — no edit-time support. `ProductCard`'s
   `_VoiceNoteButton` plays back an existing product's `audioUrl` with its
   own `ap.AudioPlayer` instance the same way.
+- **`ProductDetailScreen` (`lib/screens/product_detail_screen.dart`)** is
+  pushed via `Navigator.push(MaterialPageRoute(...))` from `ProductCard`'s
+  photo (`InkWell`) or name/"Plus →" (`GestureDetector`), wired through
+  `product_list_screen.dart`'s `_openDetail`. Has its own private
+  `_VoiceNotePlayer`/`_ActionChip` widgets rather than reusing
+  `ProductCard`'s — same duplication pattern as the `digitsOnly`/`timeAgo`
+  helpers already repeated per-file in this package. The phone-call action
+  uses `url_launcher`'s `launchUrl` on a `tel:` URI.
 
 ## Working in this repo
 

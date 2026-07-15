@@ -156,8 +156,8 @@ boot via `CREATE TABLE IF NOT EXISTS`).
 
 **Frontend** (`web/src/`): React + Vite, no router (all view-switching is
 local `useState` in `App.jsx` — `view` is one of
-`"all" | "top" | "mine" | "categories" | "boutique" | "categoryFiltered"`),
-no global state library (props drilled from `App.jsx`).
+`"all" | "top" | "mine" | "categories" | "boutique" | "categoryFiltered" |
+"productDetail"`), no global state library (props drilled from `App.jsx`).
 
 - `styles.css` is the legacy demo's `public/style.css` ported over. **Several
   selectors that were ID-based in the legacy app (`#postForm`, `#authForm`,
@@ -174,6 +174,15 @@ no global state library (props drilled from `App.jsx`).
   equivalent in `EditModal.jsx`, voice notes are record-once-at-posting-time
   only. `ProductCard.jsx` renders a plain `<audio controls>` when
   `product.audioUrl` is present.
+- **`ProductDetail.jsx`** is a full-page product view (`view === "productDetail"`),
+  web-only — no equivalent in `mobile-rn`/`mobile-flutter` yet, which still
+  only show the trimmed card. Opened from `ProductCard.jsx` via a clickable
+  photo/name or the "Plus →" link (`onOpenDetail`); `App.jsx` snapshots
+  `{ view, activeBoutique, activeCategory }` into `detailReturn` before
+  switching so the back button restores wherever the user came from
+  (all/top/mine/boutique/categoryFiltered) instead of always landing on
+  "all". Reuses `openBoutique`/`setChatProduct` from `App.jsx` rather than
+  duplicating boutique/chat logic.
 - `api.js` is the only place that talks to the backend (`fetch` wrapper +
   `ApiError` with `.status`) — components never call `fetch` directly.
 - Seller auth persists in `localStorage` under `snapy_seller` (same key the
